@@ -1,11 +1,10 @@
 from prettytable import PrettyTable
 from config import config
 
-def print_results_table(average_latencies):
+
+def pretty_print_results(average_latencies):
     print("Summary:")
-    table = PrettyTable(
-        ["", "no. of sessions", f"average latency for {config['runs_per_test']} runs"]
-    )
+    table = PrettyTable(["", "no. of sessions", f"average latency"])
     for ind, (test_no_of_sessions, average_latency) in enumerate(
         zip(config["sessions_per_test"], average_latencies)
     ):
@@ -24,3 +23,9 @@ def parse_pgbench_output(pgbench_output):
             raise Exception("output cannot be parsed, output:" + pgbench_output)
         parsed[splitted_line[0].strip()] = splitted_line[1].strip()
     return parsed
+
+
+def get_millisec(formatted_time):
+    """time is assumed to be formatted as hh:mm:ss"""
+    h, m, s = formatted_time.split(":")
+    return 1000 * (int(h) * 3600 + int(m) * 60 + int(s))

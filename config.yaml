@@ -1,6 +1,6 @@
-sessions_per_test: [10, 20, 30, 50] 
-runs_per_test: 5 #  the average values from all the runs will be reported
-transaction_file: ./test_queries.psql
+sessions_per_test: [10, 100, 1000]  
+runs_per_query: 3 #  how many times to run each query?
+queries_file: ./test_queries.psql
 db_config:
   host: localhost
   port: 5431
