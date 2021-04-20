@@ -39,6 +39,7 @@ def main():
     parser.add_argument('--host', type=str, required=True)
     parser.add_argument('--user', type=str, required=True)
     parser.add_argument('--concurrent-instances', type=int, default=10, help="number of concurrent instances of pgbench to run")
+    parser.add_argument('--connection-pool-size', type=int, default=128, help="number of connections to start on each pgbench instance")
     parser.add_argument('--duration', type=int, default=300, help="duration (in seconds) of each pgbench benchmark")
     parser.add_argument('--load-script', type=str, choices=['tpcb-like', 'select-only'], default='tpcb-like')
     parser.add_argument('--protocol', type=str, choices=['simple', 'prepared'], default='simple')
@@ -46,7 +47,7 @@ def main():
 
     results = []
     pgbench_args = [
-        '-h', f'{args.host}', '-U', f'{args.user}', '--client=128', '--jobs=128',
+        '-h', f'{args.host}', '-U', f'{args.user}', f'--client={args.connection_pool_size}', f'--jobs={args.connection_pool_size}',
         f'--time={args.duration}', f'--builtin={args.load_script}', f'--protocol={args.protocol}'
     ]
     with concurrent.futures.ThreadPoolExecutor() as executor:
