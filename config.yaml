@@ -1,5 +1,5 @@
 sessions_per_test: [10, 100, 1000]  
-runs_per_query: 3 #  how many times to run each query?
+runs_per_query: 3 
 queries_file: ./test_queries.psql
 db_config:
   host: localhost
