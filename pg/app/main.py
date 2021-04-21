@@ -1,4 +1,5 @@
 import concurrent.futures
+import os
 import re
 import statistics
 import subprocess
@@ -23,29 +24,30 @@ def parse_pgbench_output(output: str):
             re.search(r'tps = ([\d\.]+) \(excluding connections establishing\)', output).group(1)
         )
     except Exception as e:
-        raise Exception(f"Unable to parse pgbench output.\nOutput: {output}\nError: {e}.")
+        raise Exception(f'Unable to parse pgbench output.\nOutput: {output}\nError: {e}.')
     return parsed_output
 
-def run_pgbench(args: typing.List[str]):
-    print("starting app instance")
-    command = ["pgbench"]
+def run_pgbench(id: int, args: typing.List[str]):
+    command = ['pgbench']
     command += args
     result = subprocess.run(command, capture_output=True)
+    if result.returncode != 0:
+        stderr = str(result.stderr, 'utf-8')
+        raise Exception(f'pgbench #{id} terminated with a non-zero code. stderr: {stderr}')
     return str(result.stdout, 'utf-8')
 
 def parse_config():
     config = {}
-    with open("/config.yaml") as f:
+    with open('/config.yaml') as f:
         config = yaml.safe_load(f)
     # TODO: raise exceptions when the config is not valid
     return config
 
 def main():
     config = parse_config()
-    db_config = config["db_config"]
-    app_config = config["app_load_testing_config"]
+    db_config = config['db_config']
+    app_config = config['app_load_testing_config']
 
-    results = []
     pgbench_args = [
         '-h', f'{db_config["host"]}',
         '-U', f'{db_config["username"]}',
@@ -55,18 +57,28 @@ def main():
         f'--builtin={app_config["load_script"]}',
         f'--protocol={app_config["protocol"]}'
     ]
+    os.environ['PGPASSWORD'] = db_config['password']
+
+    results, exceptions = [], []
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = [executor.submit(run_pgbench, pgbench_args) for i in range(10)]
+        futures = [
+            executor.submit(run_pgbench, id, pgbench_args)
+            for id in range(app_config['concurrent_instances'])
+        ]
         results = [f.result() for f in futures]
-        results = [parse_pgbench_output(r) for r in results]
-    
+        exceptions = [f.exception() for f in futures]
+
+    if any(exceptions):
+        raise Exception(f'at least one pgbench instance has terminated with error: {exceptions}')
+
+    results = [parse_pgbench_output(r) for r in results]
     print(
-        "Average latency: {} ms".format(
+        'Average latency: {} ms'.format(
             statistics.mean([r['latency_average'] for r in results])
         )
     )
     print(
-        "Average TPS: {}".format(
+        'Average TPS: {}'.format(
             statistics.mean([r['tps_excluding_connections_establishing'] for r in results])
         )
     )
