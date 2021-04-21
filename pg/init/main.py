@@ -6,11 +6,7 @@ import yaml
 def run_pgbench(args: typing.List[str]):
     command = ['pgbench']
     command += args
-    result = subprocess.run(command, capture_output=True)
-    if result.returncode != 0:
-        stderr = str(result.stderr, 'utf-8')
-        raise Exception(f'pgbench terminated with a non-zero code. stderr: {stderr}')
-    return str(result.stdout, 'utf-8')
+    subprocess.run(command, check=True)
 
 def parse_config():
     config = {}
@@ -32,8 +28,7 @@ def main():
     ]
     os.environ['PGPASSWORD'] = db_config['password']
 
-    output = run_pgbench(pgbench_args)
-    print(output)
+    run_pgbench(pgbench_args)
 
 if __name__ == '__main__':
     main()
