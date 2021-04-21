@@ -13,6 +13,7 @@ def run_command(command):
                     -p {db_config['port']} \
                     -U {db_config['username']} \
                     -d {db_config['db']} \
+                    -c '\\pset pager 0' \
                     -c '\\timing on' \
                     -c '{command}'"
     os.environ['PGPASSWORD'] = db_config['password']
