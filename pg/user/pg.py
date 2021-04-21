@@ -30,7 +30,7 @@ def get_average_query_latency_per_run(query, runs):
     for _ in range(runs):
         try:
             psql_output = run_command(query)
-        except CalledProcessError as err:
+        except subprocess.CalledProcessError as err:
             raise Exception(f"psql terminated with error: {str(err.stderr, 'utf-8')}")
         # latency time should be the last line in the psql output
         timinig_info = psql_output.splitlines()[-1]
