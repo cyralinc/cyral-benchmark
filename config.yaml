@@ -7,7 +7,7 @@ app_load_testing_config:
   connection_pool_size: 128
   duration: 300
   load_script: tpcb-like
-  protocol: prepared
+  protocol: simple
 db_config:
   host: localhost
   port: 5432

@@ -49,7 +49,7 @@ app_load_testing_config:
   connection_pool_size: 128
   duration: 300
   load_script: tpcb-like
-  protocol: prepared
+  protocol: simple
 ```
 
 The `db_config` field is where you'll specify connection details for the database that the tests will be run against. All of these fields are required for initialization, application load testing, and user load testing.
@@ -69,4 +69,4 @@ The `app_load_testing_config` field is optional and provides fields for configur
 - **connection_pool_size (number):** Number of connections to start on each pgbench instance. Default: `128`.
 - **duration (number):** Duration (in seconds) of the pgbench trial (default: `300`)
 - **load_script (string):** Built-in script of pgbench to run. Supported values are `tpcb-like` and `select-only`. Default: `tpcb-like`.
-- **protocol (string):** Protocol to use for submitting queries to the server. Supported values are `simple` and `prepared`. Default: `prepared`.
+- **protocol (string):** Protocol to use for submitting queries to the server. Supported values are `simple` and `prepared`. Default: `simple`.
