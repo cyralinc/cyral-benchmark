@@ -1,5 +1,5 @@
 user_load_testing_config:
-  concurrent_users: [10, 50, 100, 500]  
+  concurrent_users: [10, 100, 1000]
   nb_requests: 3 
   queries_file: /pg/user/test_queries.sql
 app_load_testing_config:
