@@ -1,4 +1,3 @@
-import argparse
 import concurrent.futures
 import re
 import statistics
@@ -6,6 +5,7 @@ import subprocess
 import threading
 import time
 import typing
+import yaml
 
 def parse_pgbench_output(output: str):
     parsed_output = {}
@@ -23,8 +23,7 @@ def parse_pgbench_output(output: str):
             re.search(r'tps = ([\d\.]+) \(excluding connections establishing\)', output).group(1)
         )
     except Exception as e:
-        print(f"Unable to parse pgbench output: {e}")
-        parsed_output = {}
+        raise Exception(f"Unable to parse pgbench output.\nOutput: {output}\nError: {e}.")
     return parsed_output
 
 def run_pgbench(args: typing.List[str]):
@@ -34,21 +33,27 @@ def run_pgbench(args: typing.List[str]):
     result = subprocess.run(command, capture_output=True)
     return str(result.stdout, 'utf-8')
 
+def parse_config():
+    config = {}
+    with open("/config.yaml") as f:
+        config = yaml.safe_load(f)
+    # TODO: raise exceptions when the config is not valid
+    return config
+
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--host', type=str, required=True)
-    parser.add_argument('--user', type=str, required=True)
-    parser.add_argument('--concurrent-instances', type=int, default=10, help="number of concurrent instances of pgbench to run")
-    parser.add_argument('--connection-pool-size', type=int, default=128, help="number of connections to start on each pgbench instance")
-    parser.add_argument('--duration', type=int, default=300, help="duration (in seconds) of each pgbench benchmark")
-    parser.add_argument('--load-script', type=str, choices=['tpcb-like', 'select-only'], default='tpcb-like')
-    parser.add_argument('--protocol', type=str, choices=['simple', 'prepared'], default='simple')
-    args = parser.parse_args()
+    config = parse_config()
+    db_config = config["db_config"]
+    app_config = config["app_load_testing_config"]
 
     results = []
     pgbench_args = [
-        '-h', f'{args.host}', '-U', f'{args.user}', f'--client={args.connection_pool_size}', f'--jobs={args.connection_pool_size}',
-        f'--time={args.duration}', f'--builtin={args.load_script}', f'--protocol={args.protocol}'
+        '-h', f'{db_config["host"]}',
+        '-U', f'{db_config["username"]}',
+        f'--client={app_config["connection_pool_size"]}',
+        f'--jobs={app_config["connection_pool_size"]}',
+        f'--time={app_config["duration"]}',
+        f'--builtin={app_config["load_script"]}',
+        f'--protocol={app_config["protocol"]}'
     ]
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = [executor.submit(run_pgbench, pgbench_args) for i in range(10)]

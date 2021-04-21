@@ -1,12 +1,13 @@
 #!/bin/sh
 
-BENCHMARK=$1
-[ ! -z "$BENCHMARK" ] && shift;
+SUBCOMMAND=$1
+[ ! -z "$SUBCOMMAND" ] && shift;
 
-case $BENCHMARK in
+case $SUBCOMMAND in
 init)
   cd pg/init
   exec python ./main.py $@;
+  ;;
 user)
   cd pg/user
   exec python ./main.py $@;
@@ -16,6 +17,6 @@ app)
   exec python ./main.py $@;
   ;;
 *)
-  echo "$BENCHMARK is not a valid benchmark. Please select a supported benchmark to run: [pg/user|pg/app]";
+  echo "$SUBCOMMAND is not a valid subcommand. Please select a supported subcommand to run: [pg/user|pg/app]";
   ;;
 esac
