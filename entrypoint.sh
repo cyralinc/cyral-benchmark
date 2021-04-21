@@ -17,6 +17,6 @@ app)
   exec python ./main.py $@;
   ;;
 *)
-  echo "$SUBCOMMAND is not a valid subcommand. Please select a supported subcommand to run: [pg/user|pg/app]";
+  echo "$SUBCOMMAND is not a valid subcommand. Please select a supported subcommand to run: [init|user|app]";
   ;;
 esac
