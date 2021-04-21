@@ -14,20 +14,20 @@ This is a tool for benchmarking database throughput and request latency. You can
 ## Initialization
 The tool provides an `init` function to populate your PostgreSQL database with sample data using [pgbench](https://www.postgresql.org/docs/10/pgbench.html). This only has to be done once for each repository you run the tests against.
 ```
-docker run -v path/to/local/config.yaml:/config.yaml gcr.io/cyralinc/cyral-benchmark:v0.1.0 init
+docker run -v path/to/local/config.yaml:/config.yaml gcr.io/cyralpublic/cyral-benchmark:v0.1.0 init
 ```
 Note that the size of the dataset created is a function of `app_load_testing_config.concurrent_instances * app_load_testing_config.connection_pool_size`. These variables are defined in the `config.yaml` (see below for description). 
 
 ## Application load testing
 The app load testing tool simulates a large number of connection pools originating from multiple applications by making requests through `pgbench`. It measures transactions per second (TPS) and latency for each application and outputs these metrics in an aggregated form. Please see [Configuration](#Configuration) for instructions on how to configure this test.
 ```
-docker run -v path/to/local/config.yaml:/config.yaml gcr.io/cyralinc/cyral-benchmark:v0.1.0 app
+docker run -v path/to/local/config.yaml:/config.yaml gcr.io/cyralpublic/cyral-benchmark:v0.1.0 app
 ```
 
 ## User load testing
 The user load testing tool emulates the latency an adhoc user would experience when making requests through `psql`. It measures request latency for a each of a configurable set of queries, under load conditions that represent various numbers of concurrent database connections. Please see [Configuration](#Configuration) for instructions on how to configure this test. 
 ```
-docker run -v path/to/local/config.yaml:/config.yaml gcr.io/cyralinc/cyral-benchmark:v0.1.0 user
+docker run -v path/to/local/config.yaml:/config.yaml gcr.io/cyralpublic/cyral-benchmark:v0.1.0 user
 ```
 
 # Configuration
