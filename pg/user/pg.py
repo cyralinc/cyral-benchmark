@@ -26,9 +26,9 @@ def run_command(command):
     return psql_output
 
 
-def get_average_query_latency_per_run(query, runs):
+def get_average_query_latency_per_request(query, requests):
     total_latency = 0.0
-    for _ in range(runs):
+    for _ in range(requests):
         try:
             psql_output = run_command(query)
         except subprocess.CalledProcessError as err:
@@ -41,19 +41,19 @@ def get_average_query_latency_per_run(query, runs):
             else get_millisec(timinig_info.split()[1])
         )
         total_latency += latency_in_ms
-    return total_latency / runs
+    return total_latency / requests
 
 
-def get_query_average_latency_per_session(no_of_sessions, query, runs):
+def get_query_average_latency_per_user(no_of_users, query, requests):
     total_latency = 0.0
-    with ThreadPoolExecutor(max_workers=no_of_sessions) as e:
+    with ThreadPoolExecutor(max_workers=no_of_users) as e:
         future_query_latencies = [
-            e.submit(get_average_query_latency_per_run, query, runs)
-            for _ in range(no_of_sessions)
+            e.submit(get_average_query_latency_per_request, query, requests)
+            for _ in range(no_of_users)
         ]
         for future_query_latency in future_query_latencies:
             total_latency += future_query_latency.result()
-    return total_latency / no_of_sessions
+    return total_latency / no_of_users
 
 
 def load_test():
@@ -62,11 +62,11 @@ def load_test():
     concurrent_users = config["concurrent_users"]
     queries = config["queries"]
     with tqdm(total=len(concurrent_users)*len(queries), desc="Running...") as pbar:
-        for no_of_sessions in concurrent_users:
+        for no_of_users in concurrent_users:
             test_total_latency = 0.0
             for ind, query in enumerate(queries):
-                average_query_latency = get_query_average_latency_per_session(
-                    no_of_sessions, query, config["nb_requests"]
+                average_query_latency = get_query_average_latency_per_user(
+                    no_of_users, query, config["nb_requests"]
                 )
                 average_latency_per_query[f"Query #{ind+1}"].append(average_query_latency)
                 test_total_latency += average_query_latency
