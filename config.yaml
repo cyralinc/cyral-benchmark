@@ -10,7 +10,7 @@ app_load_testing_config:
   protocol: prepared
 db_config:
   host: localhost
-  port: 5431
-  db: mydb
+  port: 5432
+  db: pgbench
   username: postgres
   password: secret
