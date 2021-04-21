@@ -15,12 +15,12 @@ def run_command(command):
                     -d {db_config['db']} \
                     -c '\\timing on' \
                     -c '{command}'"
+    os.environ['PGPASSWORD'] = db_config['password']
     psql_output = subprocess.run(
         psql_command,
         shell=True,
         capture_output=True,
         check=True,
-        env={"PGPASSWORD": db_config["password"]},
     ).stdout.decode("utf-8")
     return psql_output
 
