@@ -2,13 +2,20 @@ from prettytable import PrettyTable
 from config import config
 
 
-def pretty_print_results(average_latencies):
-    print("Summary:")
-    table = PrettyTable(["", "no. of sessions", f"average latency"])
-    for ind, (test_no_of_sessions, average_latency) in enumerate(
-        zip(config["sessions_per_test"], average_latencies)
-    ):
-        table.add_row([f"Test #{ind+1}", test_no_of_sessions, f"{average_latency} ms"])
+def pretty_print_results(average_latencies_per_test):
+    # printing quereis used
+    print("\nQueries used:\n")
+    for index, query in enumerate(config["queries"]):
+        print(f"Query #{index+1}: '{query}'")
+    # preparing table rows
+    print("\nResults:\n")
+    titles_row = []
+    for sessions_number in config["concurrent_users"]:
+        titles_row.append(f"{sessions_number} concurrent users")
+    table = PrettyTable([""] + titles_row)
+    for key, latencies in average_latencies_per_test.items():
+        table.add_row([key] + [f"{round(val, 4):.4f} ms" for val in latencies])
+    # printing table
     print(table)
 
 

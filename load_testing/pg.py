@@ -1,12 +1,13 @@
 import os
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
-from config import config
+from collections import defaultdict
+from tqdm import tqdm
+from config import config, db_config
 from helpers import parse_pgbench_output, get_millisec
 
 
 def run_command(command):
-    db_config = config["db_config"]
     psql_command = f"psql \
                     -h {db_config['host']} \
                     -p {db_config['port']} \
@@ -25,7 +26,7 @@ def run_command(command):
 
 
 def get_average_query_latency_per_run(query, runs):
-    totol_latency = 0.0
+    total_latency = 0.0
     for _ in range(runs):
         psql_output = run_command(query)
         # latency time should be the last line in the psql output
@@ -35,8 +36,8 @@ def get_average_query_latency_per_run(query, runs):
             if "ms" in timinig_info
             else get_millisec(timinig_info.split()[1])
         )
-        totol_latency += latency_in_ms
-    return totol_latency / runs
+        total_latency += latency_in_ms
+    return total_latency / runs
 
 
 def get_query_average_latency_per_session(no_of_sessions, query, runs):
@@ -52,21 +53,20 @@ def get_query_average_latency_per_session(no_of_sessions, query, runs):
 
 
 def load_test():
-    average_latencies = []
-    for test_index, no_of_sessions in enumerate(config["sessions_per_test"]):
-        print(f"Test #{test_index+1}: no. of sessions = {no_of_sessions}")
-        sum_of_average_queries_latencies = 0.0
-        for query_index, query in enumerate(config["queries"]):
-            print(
-                f"\tQuery #{query_index+1}: \n\t\tquery: {query} \n\t\taverage latency = ",
-                end=" ",
-            )
-            average_query_latency = get_query_average_latency_per_session(
-                no_of_sessions, query, config["runs_per_query"]
-            )
-            print(f"{average_query_latency} ms")
-            sum_of_average_queries_latencies += average_query_latency
-        average_test_latency = sum_of_average_queries_latencies / len(config["queries"])
-        average_latencies.append(average_test_latency)
-        print(f"average test latency = {average_test_latency} ms")
-    return average_latencies
+    average_latency_per_query = defaultdict(list)
+    average_latency_per_test = []
+    concurrent_users = config["concurrent_users"]
+    queries = config["queries"]
+    with tqdm(total=len(concurrent_users)*len(queries), desc="Running...") as pbar:
+        for no_of_sessions in concurrent_users:
+            test_total_latency = 0.0
+            for ind, query in enumerate(queries):
+                average_query_latency = get_query_average_latency_per_session(
+                    no_of_sessions, query, config["nb_requests"]
+                )
+                average_latency_per_query[f"Query #{ind+1}"].append(average_query_latency)
+                test_total_latency += average_query_latency
+                pbar.update(1)
+            average_latency_per_test.append(test_total_latency / len(config["queries"]))
+        average_latency_per_query["All"] = average_latency_per_test
+        return average_latency_per_query

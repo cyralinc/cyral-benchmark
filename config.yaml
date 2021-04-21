@@ -1,6 +1,7 @@
-sessions_per_test: [10, 100, 1000]  
-runs_per_query: 3 
-queries_file: ./test_queries.psql
+user_load_testing_config:
+  concurrent_users: [10, 50, 100, 500]  
+  nb_requests: 3 
+  queries_file: ./test_queries.sql
 db_config:
   host: localhost
   port: 5431
