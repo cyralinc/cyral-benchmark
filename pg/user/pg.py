@@ -13,14 +13,15 @@ def run_command(command):
                     -p {db_config['port']} \
                     -U {db_config['username']} \
                     -d {db_config['db']} \
+                    -c '\\pset pager 0' \
                     -c '\\timing on' \
                     -c '{command}'"
+    os.environ['PGPASSWORD'] = db_config['password']
     psql_output = subprocess.run(
         psql_command,
         shell=True,
         capture_output=True,
         check=True,
-        env={"PGPASSWORD": db_config["password"]},
     ).stdout.decode("utf-8")
     return psql_output
 
@@ -28,7 +29,10 @@ def run_command(command):
 def get_average_query_latency_per_run(query, runs):
     total_latency = 0.0
     for _ in range(runs):
-        psql_output = run_command(query)
+        try:
+            psql_output = run_command(query)
+        except subprocess.CalledProcessError as err:
+            raise Exception(f"psql terminated with error: {str(err.stderr, 'utf-8')}")
         # latency time should be the last line in the psql output
         timinig_info = psql_output.splitlines()[-1]
         latency_in_ms = (

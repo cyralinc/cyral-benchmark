@@ -6,7 +6,6 @@ authors = ["Ahmed Marzouk <amarzouk@cyral.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-psycopg2 = "^2.8.6"
 PyYAML = "^5.4.1"
 typer = "^0.3.2"
 prettytable = "^2.1.0"
