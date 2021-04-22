@@ -7,6 +7,7 @@ import threading
 import time
 import typing
 import yaml
+from tqdm import tqdm
 
 def parse_pgbench_output(output: str):
     parsed_output = {}
@@ -65,6 +66,10 @@ def main():
             executor.submit(run_pgbench, id, pgbench_args)
             for id in range(app_config['concurrent_instances'])
         ]
+        for i in tqdm(range(app_config['duration'])):
+            if not any([f.running() for f in futures]):
+                break
+            time.sleep(1)
         results = [f.result() for f in futures]
         exceptions = [f.exception() for f in futures]
 

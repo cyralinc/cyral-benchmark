@@ -40,8 +40,13 @@ def run_queries():
     return latencies
 
 
+<<<<<<< HEAD
 def get_average_query_latency_per_request(requests):
     total_queries_latencies = []
+=======
+def get_average_query_latency_per_request(query, requests):
+    total_latency = 0.0
+>>>>>>> main
     for _ in range(requests):
         try:
             user_queries_latencies = run_queries()
