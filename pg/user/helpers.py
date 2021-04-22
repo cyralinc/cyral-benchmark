@@ -7,8 +7,19 @@ def pretty_print_results(tests_average_latency_per_query):
     print("\nQueries used:\n")
     for index, query in enumerate(config["queries"]):
         print(f"Query #{index+1}: '{query}'")
-    # preparing table
     print("\nAverage Latencies:\n")
+    # preparing table
+    # table example:
+    # +----------+---------------------+---------------------+
+    # |          | 10 concurrent users | 20 concurrent users |
+    # +----------+---------------------+---------------------+
+    # | Query #1 |      3.0363 ms      |      3.6066 ms      |
+    # | Query #2 |      2.5981 ms      |      3.3717 ms      |
+    # | Query #3 |      5.0235 ms      |      6.3476 ms      |
+    # | Query #4 |      26.0987 ms     |      33.0589 ms     |
+    # | Query #5 |     237.2720 ms     |     275.7278 ms     |
+    # |   All    |      54.8057 ms     |      64.4225 ms     |
+    # +----------+---------------------+---------------------+
     titles_row = []
     for no_of_users in config["concurrent_users"]:
         titles_row.append(f"{no_of_users} concurrent users")
@@ -30,21 +41,13 @@ def pretty_print_results(tests_average_latency_per_query):
     print(table)
 
 
-def parse_pgbench_output(pgbench_output):
-    parsed = {}
-    for output_line in pgbench_output.splitlines():
-        if ":" in output_line:
-            splitted_line = output_line.split(":")
-        elif "=" in output_line:
-            splitted_line = output_line.split("=")
-        else:
-            raise Exception("output cannot be parsed, output:" + pgbench_output)
-        parsed[splitted_line[0].strip()] = splitted_line[1].strip()
-    return parsed
-
-
 def get_millisec(formatted_time):
-    """time is assumed to be formatted as hh:mm:ss"""
     splitted = formatted_time.split(":")
-    h, m, s = splitted if len(splitted) is 3 else ([0] + splitted)
+    h, m, s = splitted if len(splitted) == 3 else ([0] + splitted)
     return 1000 * (int(h) * 3600 + int(m) * 60 + int(s))
+
+
+def add_lists(list1, list2):
+    if len(list1) != len(list2):
+        raise Exception("Cannot add lists!")
+    return [item1 + item2 for item1, item2 in zip(list1, list2)]

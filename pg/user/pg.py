@@ -3,10 +3,13 @@ import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 from config import config, db_config
-from helpers import parse_pgbench_output, get_millisec
+from helpers import get_millisec, add_lists
 
 
 def extract_latencies(psql_output):
+    """
+    extracts the time latencies from a psql_output
+    """
     latencies = []
     for line in psql_output.splitlines():
         if line.startswith("Time:"):
@@ -20,6 +23,9 @@ def extract_latencies(psql_output):
 
 
 def run_queries():
+    """
+    runs all the predefined queries in a single psql command
+    """
     psql_command = f"psql \
                     -h {db_config['host']} \
                     -p {db_config['port']} \
@@ -36,64 +42,68 @@ def run_queries():
         capture_output=True,
         check=True,
     ).stdout.decode("utf-8")
-    latencies = extract_latencies(psql_output)
-    return latencies
+    return psql_output
 
 
-def get_average_query_latency_per_request(requests):
+def get_queries_average_latencies_per_request(nb_requests):
+    """
+    runs all the predefined queries 'nb_requests' times and returns the average latenceis per request
+    """
     total_queries_latencies = []
-    for _ in range(requests):
+    for _ in range(nb_requests):
         try:
-            user_queries_latencies = run_queries()
+            psql_output = run_queries()
+            queries_latencies = extract_latencies(psql_output)
             total_queries_latencies = (
-                user_queries_latencies
+                queries_latencies
                 if not len(total_queries_latencies)
-                else [
-                    item1 + item2
-                    for item1, item2 in zip(
-                        user_queries_latencies, total_queries_latencies
-                    )
-                ]
+                else add_lists(total_queries_latencies, queries_latencies)
             )
         except subprocess.CalledProcessError as err:
             raise Exception(f"psql terminated with error: {str(err.stderr, 'utf-8')}")
-        # latency time should be the last line in the psql output
-    average_latencies_per_request = [
-        item / requests for item in total_queries_latencies
+    average_queries_latencies_per_request = [
+        total_query_latencies / nb_requests
+        for total_query_latencies in total_queries_latencies
     ]
-    return average_latencies_per_request
+    return average_queries_latencies_per_request
 
 
-def get_queries_average_latency_per_user(no_of_users, requests, pbar):
+def get_queries_average_latencies_per_user(no_of_users, nb_requests, pbar):
+    """
+    parallelly runs 'no_of_users' threads and returns the average latencies experienced by each one
+    """
     total_latencies = []
     with ThreadPoolExecutor(max_workers=no_of_users) as e:
-        future_query_latencies = [
-            e.submit(get_average_query_latency_per_request, requests)
+        future_queries_latencies = [
+            e.submit(get_queries_average_latencies_per_request, nb_requests)
             for _ in range(no_of_users)
         ]
-        for future_query_latency in future_query_latencies:
-            user_queries_latencies = future_query_latency.result()
+        for future in future_queries_latencies:
+            queries_latencies = future.result()
             total_latencies = (
-                user_queries_latencies
+                queries_latencies
                 if not len(total_latencies)
-                else [
-                    item1 + item2
-                    for item1, item2 in zip(total_latencies, user_queries_latencies)
-                ]
+                else add_lists(total_latencies, queries_latencies)
             )
             pbar.update(1)
-    average_latencies = [item / no_of_users for item in total_latencies]
+    average_latencies = [
+        total_latency / no_of_users for total_latency in total_latencies
+    ]
     return average_latencies
 
 
 def load_test():
-    tests_average_latency_per_query = []
+    """
+    runs the user load test
+    """
+    tests_average_latencies = []
     concurrent_users = config["concurrent_users"]
-    queries = config["queries"]
     with tqdm(total=sum(concurrent_users), desc="Running...") as pbar:
         for no_of_users in concurrent_users:
-            queries_average_latency = get_queries_average_latency_per_user(
+            # each item in 'concurrent_users' list represents a test
+            # given a set of concurrent users in a test, compute the average experienced latency for each query
+            queries_average_latencies = get_queries_average_latencies_per_user(
                 no_of_users, config["nb_requests"], pbar
             )
-            tests_average_latency_per_query.append(queries_average_latency)
-        return tests_average_latency_per_query
+            tests_average_latencies.append(queries_average_latencies)
+        return tests_average_latencies
