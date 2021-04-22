@@ -17,7 +17,7 @@ def extract_latencies(psql_output):
             )
             latencies.append(latency_in_ms)
     return latencies
-    
+
 
 def run_queries():
     psql_command = f"psql \
@@ -29,7 +29,7 @@ def run_queries():
                     -c '\\timing on' "
     for query in config["queries"]:
         psql_command += f" -c '{query}'"
-    os.environ['PGPASSWORD'] = db_config['password']
+    os.environ["PGPASSWORD"] = db_config["password"]
     psql_output = subprocess.run(
         psql_command,
         shell=True,
@@ -40,21 +40,27 @@ def run_queries():
     return latencies
 
 
-<<<<<<< HEAD
 def get_average_query_latency_per_request(requests):
     total_queries_latencies = []
-=======
-def get_average_query_latency_per_request(query, requests):
-    total_latency = 0.0
->>>>>>> main
     for _ in range(requests):
         try:
             user_queries_latencies = run_queries()
-            total_queries_latencies = user_queries_latencies if not len(total_queries_latencies) else [item1+item2 for item1, item2 in zip(user_queries_latencies, total_queries_latencies)]
+            total_queries_latencies = (
+                user_queries_latencies
+                if not len(total_queries_latencies)
+                else [
+                    item1 + item2
+                    for item1, item2 in zip(
+                        user_queries_latencies, total_queries_latencies
+                    )
+                ]
+            )
         except subprocess.CalledProcessError as err:
             raise Exception(f"psql terminated with error: {str(err.stderr, 'utf-8')}")
         # latency time should be the last line in the psql output
-    average_latencies_per_request = [item / requests for item in total_queries_latencies]
+    average_latencies_per_request = [
+        item / requests for item in total_queries_latencies
+    ]
     return average_latencies_per_request
 
 
@@ -67,7 +73,14 @@ def get_queries_average_latency_per_user(no_of_users, requests, pbar):
         ]
         for future_query_latency in future_query_latencies:
             user_queries_latencies = future_query_latency.result()
-            total_latencies = user_queries_latencies if not len(total_latencies) else [item1+item2 for item1, item2 in zip(total_latencies, user_queries_latencies)]
+            total_latencies = (
+                user_queries_latencies
+                if not len(total_latencies)
+                else [
+                    item1 + item2
+                    for item1, item2 in zip(total_latencies, user_queries_latencies)
+                ]
+            )
             pbar.update(1)
     average_latencies = [item / no_of_users for item in total_latencies]
     return average_latencies
