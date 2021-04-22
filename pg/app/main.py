@@ -3,6 +3,7 @@ import os
 import re
 import statistics
 import subprocess
+import sys
 import threading
 import time
 import typing
@@ -11,21 +12,33 @@ from tqdm import tqdm
 
 def parse_pgbench_output(output: str):
     parsed_output = {}
+
+    match = re.search(r'number of transactions actually processed: ([\d]+)', output)
+    if not match:
+        raise Exception(f'Unable to parse output: number of transactions actually processed was not found. Output: {output}')
     try:
-        parsed_output['transactions_actually_processed'] = int(
-            re.search(r'number of transactions actually processed: ([\d]+)', output).group(1)
-        )
-        parsed_output['latency_average'] = float(
-            re.search(r'latency average = ([\d\.]+)', output).group(1)
-        )
-        parsed_output['tps_including_connections_establishing'] = float(
-            re.search(r'tps = ([\d\.]+) \(including connections establishing\)', output).group(1)
-        )
-        parsed_output['tps_excluding_connections_establishing'] = float(
-            re.search(r'tps = ([\d\.]+) \(excluding connections establishing\)', output).group(1)
-        )
-    except Exception as e:
-        raise Exception(f'Unable to parse pgbench output.\nOutput: {output}\nError: {e}.')
+        parsed_output['transactions'] = int(match.group(1))
+    except Exception:
+        parsed_output['transactions'] = -1
+    if parsed_output['transactions'] <= 0:
+        raise Exception('pgbench reported no transactions processed. Try decreasing concurrent_instances or connection_pool_size.')
+
+    match = re.search(r'latency average = ([\d\.]+)', output)
+    if not match:
+        raise Exception(f'Unable to parse output: average latency not found. Output: {output}')
+    try:
+        parsed_output['latency'] = float(match.group(1))
+    except Exception:
+        parsed_output['latency'] = -1
+
+    match = re.search(r'tps = ([\d\.]+) \(excluding connections establishing\)', output)
+    if not match:
+        raise Exception(f'Unable to parse output: TPS value not found. Output: {output}')
+    try:
+        parsed_output['tps'] = float(match.group(1))
+    except Exception:
+        parsed_output['tps'] = -1
+
     return parsed_output
 
 def run_pgbench(id: int, args: typing.List[str]):
@@ -60,7 +73,7 @@ def main():
     ]
     os.environ['PGPASSWORD'] = db_config['password']
 
-    results, exceptions = [], []
+    futures, results, exceptions = [], [], []
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = [
             executor.submit(run_pgbench, id, pgbench_args)
@@ -70,23 +83,27 @@ def main():
             if not any([f.running() for f in futures]):
                 break
             time.sleep(1)
+        if any([f.running() for f in futures]):
+            print("Waiting for pgbench instances to finish...")
         results = [f.result() for f in futures]
         exceptions = [f.exception() for f in futures]
 
     if any(exceptions):
-        raise Exception(f'at least one pgbench instance has terminated with error: {exceptions}')
+        sys.exit(f'at least one pgbench instance has terminated with error: {exceptions}')
 
-    results = [parse_pgbench_output(r) for r in results]
-    print(
-        'Average latency: {} ms'.format(
-            statistics.mean([r['latency_average'] for r in results])
-        )
-    )
-    print(
-        'Average TPS: {}'.format(
-            statistics.mean([r['tps_excluding_connections_establishing'] for r in results])
-        )
-    )
+    try:
+        results = [parse_pgbench_output(r) for r in results]
+    except Exception as err:
+        sys.exit(err)
+    
+    latency_values = [r['latency'] for r in results if r['latency'] != -1]
+    tps_values = [r['tps'] for r in results if r['tps'] != -1]
+
+    print()
+    if latency_values:
+        print('Average latency: {} ms'.format(statistics.mean(latency_values)))
+    if tps_values:
+        print('Average TPS: {}'.format(statistics.mean(tps_values)))
 
 if __name__ == '__main__':
     main()
