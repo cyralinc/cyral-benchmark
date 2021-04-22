@@ -24,7 +24,7 @@ def pretty_print_results(tests_average_latency_per_query):
         sum(column) / len(column) for column in tests_average_latency_per_query
     ]
     table.add_row(
-        [f"All"] + [f"{round(cell, 4):.4f} ms" for cell in average_test_latency]
+        ["All"] + [f"{round(cell, 4):.4f} ms" for cell in average_test_latency]
     )
     # printing table
     print(table)
