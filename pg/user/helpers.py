@@ -2,7 +2,7 @@ from prettytable import PrettyTable
 from config import config
 
 
-def pretty_print_results(average_latencies_per_test):
+def pretty_print_results(tests_average_latency_per_query):
     # printing test queries
     print("\nQueries used:\n")
     for index, query in enumerate(config["queries"]):
@@ -13,8 +13,13 @@ def pretty_print_results(average_latencies_per_test):
     for no_of_users in config["concurrent_users"]:
         titles_row.append(f"{no_of_users} concurrent users")
     table = PrettyTable([""] + titles_row)
-    for key, latencies in average_latencies_per_test.items():
-        table.add_row([key] + [f"{round(val, 4):.4f} ms" for val in latencies])
+    # transpose input as the input represnt the columns of the table
+    table_rows = [list(x) for x in zip(*tests_average_latency_per_query)]
+    for index, row in enumerate(table_rows):
+        table.add_row([f"Query #{index+1}"] + [f"{round(cell, 4):.4f} ms" for cell in row])
+    # average latency per test
+    average_test_latency = [sum(column)/len(column) for column in tests_average_latency_per_query]
+    table.add_row([f"All"] + [f"{round(cell, 4):.4f} ms" for cell in average_test_latency])
     # printing table
     print(table)
 
