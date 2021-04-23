@@ -30,6 +30,11 @@ The user load testing tool emulates the latency an adhoc user would experience w
 docker run -v path/to/local/config.yaml:/config.yaml gcr.io/cyralpublic/cyral-benchmark:v0.1.0 user
 ```
 
+To customize the queries, modify the file `pg/user/test_queries.sql` as needed and mount the file into the container
+```
+docker run -v path/to/local/config.yaml:/config.yaml -v <local directory>/pg/user/test_queries.sql:/pg/user/test_queries.sql --rm gcr.io/cyralpublic/cyral-benchmark:v0.1.1 user
+```
+
 # Configuration
 For all use cases (initialization, application load testing, or user load testing), you configure the tool by specifying values in a `config.yaml` file that you'll pass to the Docker image. Here's a sample configuration file:
 ```
